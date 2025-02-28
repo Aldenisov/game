@@ -21,6 +21,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 INITIAL_PLAYER_SIZE = 50
 BALL_SIZE = 30
+TRAP_SIZE = 30
 INITIAL_BALL_FALL_SPEED = 3  # Начальная скорость падения
 MAX_BALL_FALL_SPEED = 10  # Максимальная скорость падения
 WHITE = (255, 255, 255)
@@ -45,6 +46,10 @@ ball_images = [
     pygame.image.load('ball3.jpg')
 ]
 ball_images = [pygame.transform.scale(img, (BALL_SIZE, BALL_SIZE)) for img in ball_images]
+
+# Загрузка изображения ловушки
+trap_image = pygame.image.load('trap.jpg')  # Замените на ваше изображение ловушки
+trap_image = pygame.transform.scale(trap_image, (TRAP_SIZE, TRAP_SIZE))
 
 background_start = pygame.image.load('background_start.png')
 background_end = pygame.image.load('background_end.jpg')
@@ -77,18 +82,34 @@ class Player:
     def increase_size(self):
         self.size += 5  # Увеличиваем размер игрока
 
+    def decrease_size(self):
+        self.size = max(10, self.size - 5)  # Уменьшаем размер игрока, не позволяя ему стать меньше 10
+
 
 # Класс мяча
 class Ball:
-    def __init__(self):
+    def __init__(self, ball_type):
         self.rect = pygame.Rect(random.randint(0, SCREEN_WIDTH - BALL_SIZE), 0, BALL_SIZE, BALL_SIZE)
-        self.image = random.choice(ball_images)  # Случайное изображение мяча
+        self.image = ball_images[ball_type]  # Выбираем изображение мяча по типу
+        self.ball_type = ball_type  # Хранение типа мяча
 
     def fall(self, speed):
         self.rect.y += speed
 
     def draw(self):
         screen.blit(self.image, self.rect.topleft)
+
+
+# Класс ловушки
+class Trap:
+    def __init__(self):
+        self.rect = pygame.Rect(random.randint(0, SCREEN_WIDTH - TRAP_SIZE), 0, TRAP_SIZE, TRAP_SIZE)
+
+    def fall(self, speed):
+        self.rect.y += speed
+
+    def draw(self):
+        screen.blit(trap_image, self.rect.topleft)
 
 
 # Функция для отображения рекордов
@@ -174,13 +195,13 @@ def show_end_screen(score):
 
     screen.blit(background_end, (0, 0))
     game_over_text = font.render("Игра Окончена!", True, (0, 0, 0))
-    screen.blit(game_over_text, (
-    SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - game_over_text.get_height() // 2))
+    screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - game_over_text.get_height() // 2))
     score_text = font_small.render(f"Ваш счёт: {score}", True, (0, 0, 0))
     screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2 + 50))
     restart_text = font_small.render("Нажмите любую клавишу, чтобы сыграть снова", True, (0, 0, 0))
     screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100))
     pygame.display.flip()
+
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -190,62 +211,73 @@ def show_end_screen(score):
             if event.type == pygame.KEYDOWN:
                 waiting = False
 
-
-# Главная функция игры
 def main():
-    clock = pygame.time.Clock()
-    player = Player()
-    balls = []
-    score = 0
-    speed = INITIAL_BALL_FALL_SPEED
-    running = True
+    while True:  # Основной цикл игры
+        clock = pygame.time.Clock()
+        player = Player()
+        balls = []
+        traps = []  # Список ловушек
+        score = 0
+        speed = INITIAL_BALL_FALL_SPEED
+        running = True
 
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            player.move(-5)
-        if keys[pygame.K_RIGHT]:
-            player.move(5)
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                player.move(-5)
+            if keys[pygame.K_RIGHT]:
+                player.move(5)
 
-        # Уменьшение количества мячей, которые падают
-        if random.randint(1, 50) == 1:  # Увеличиваем интервал создания мячей
-            balls.append(Ball())
+            # Создание мячей и ловушек
+            if random.randint(1, 50) == 1:  # Увеличиваем интервал создания мячей и ловушек
+                ball_type = random.randint(0, 2)  # 0 - ball1, 1 - ball2, 2 - ball3
+                balls.append(Ball(ball_type))
 
-        # Обновление мячей
-        for ball in balls:
-            ball.fall(speed)
-            if ball.rect.y > SCREEN_HEIGHT:
-                show_end_screen(score)  # Конец игры при пропуске мяча
-                return  # Вернуться в главное меню
-            if player.rect.colliderect(ball.rect):
-                balls.remove(ball)
-                score += 1
-                player.increase_size()  # Увеличиваем размер игрока
+            if random.randint(1, 100) == 1:  # Ловушки появляются реже
+                traps.append(Trap())
 
-                # Увеличиваем скорость падения мячей после достижения определенных очков
-                if score % 10 == 0 and score != 0:
-                    speed = min(speed + 1, MAX_BALL_FALL_SPEED)  # Ограничиваем максимальную скорость
+            # Обновление мячей
+            for ball in balls:
+                ball.fall(speed)
+                if ball.rect.y > SCREEN_HEIGHT:
+                    show_end_screen(score)  # Конец игры при пропуске мяча
+                    running = False  # Завершаем внутренний цикл игры
+                    break  # Выходим из цикла, чтобы перейти к экрану окончания игры
+                if player.rect.colliderect(ball.rect):
+                    if ball.ball_type == 1:  # ball2
+                        player.decrease_size()  # Уменьшаем размер игрока
+                    elif ball.ball_type == 2:  # ball3
+                        player.increase_size()  # Увеличиваем размер игрока
+                    balls.remove(ball)
+                    score += 1  # Увеличиваем счёт
 
-                # Поздравляем игрока, если он достиг 10 или 100 очков
-                if score == 10 or score == 100:
-                    show_congratulations(score)
+            # Обновление ловушек
+            for trap in traps:
+                trap.fall(speed)
+                if player.rect.colliderect(trap.rect):
+                    show_end_screen(score)  # Конец игры при столкновении с ловушкой
+                    running = False  # Завершаем внутренний цикл игры
+                    break  # Выходим из цикла, чтобы перейти к экрану окончания игры
 
-        # Отрисовка
-        screen.blit(game_background, (0, 0))  # Отрисовка фонового изображения для игры
-        player.draw()
-        for ball in balls:
-            ball.draw()
-        score_text = font_small.render(f"Счёт: {score}", True, (0, 0, 0))
-        screen.blit(score_text, (10, 10))  # Отображение счёта в верхнем левом углу
-        pygame.display.flip()
+            # Отрисовка
+            screen.blit(game_background, (0, 0))  # Отрисовка фонового изображения для игры
+            player.draw()
+            for ball in balls:
+                ball.draw()
+            for trap in traps:
+                trap.draw()
+            score_text = font_small.render(f"Счёт: {score}", True, (0, 0, 0))
+            screen.blit(score_text, (10, 10))  # Отображение счёта в верхнем левом углу
+            pygame.display.flip()
 
-        clock.tick(FPS)
+            clock.tick(FPS)
 
-    show_end_screen(score)
+        # Переход к экрану окончания игры
+        show_end_screen(score)
 
 if __name__ == "__main__":
     show_start_screen()
