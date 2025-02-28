@@ -38,6 +38,29 @@ def show_start_screen():
             if event.type == pygame.KEYDOWN:
                 running = False  # Выход из заставки
 
+# Функция для отображения конечной заставки
+def show_end_screen(score):
+    font = pygame.font.Font(None, 74)
+    end_text = font.render("Игра Окончена", True, (255, 0, 0))
+    score_text = pygame.font.Font(None, 36).render(f"Ваш счёт: {score}", True, (255, 255, 255))
+    instructions_text = pygame.font.Font(None, 36).render("Нажмите любую клавишу, чтобы выйти", True, (255, 255, 255))
+
+    running = True
+    while running:
+        screen.fill((0, 0, 0))  # Черный фон
+        screen.blit(end_text, (SCREEN_WIDTH // 2 - end_text.get_width() // 2, SCREEN_HEIGHT // 3))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2))
+        screen.blit(instructions_text, (SCREEN_WIDTH // 2 - instructions_text.get_width() // 2, SCREEN_HEIGHT * 2 // 3))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                running = False  # Выход из конечной заставки
+
 # Класс игрока
 class Player:
     def __init__(self):
@@ -147,7 +170,7 @@ def main():
 
         clock.tick(FPS)
 
-    print(f"Игра окончена! Ваш счёт: {score}")
+    show_end_screen(score)  # Показать конечную заставку после окончания игры
 
 if __name__ == "__main__":
     main()
