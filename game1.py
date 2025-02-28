@@ -17,6 +17,27 @@ FPS = 30
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Собирай Мячи")
 
+# Функция для отображения заставки
+def show_start_screen():
+    font = pygame.font.Font(None, 74)
+    title_text = font.render("Собирай Мячи", True, (255, 255, 255))
+    instructions_text = pygame.font.Font(None, 36).render("Нажмите любую клавишу, чтобы начать", True, (255, 255, 255))
+
+    running = True
+    while running:
+        screen.fill((0, 0, 0))  # Черный фон
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, SCREEN_HEIGHT // 3))
+        screen.blit(instructions_text, (SCREEN_WIDTH // 2 - instructions_text.get_width() // 2, SCREEN_HEIGHT // 2))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                running = False  # Выход из заставки
+
 # Класс игрока
 class Player:
     def __init__(self):
@@ -63,6 +84,8 @@ class Trap:
         pygame.draw.rect(screen, (0, 255, 0), self.rect)  # Зеленый цвет ловушки
 
 def main():
+    show_start_screen()  # Показать заставку перед началом игры
+
     clock = pygame.time.Clock()
     player = Player()
     balls = []
